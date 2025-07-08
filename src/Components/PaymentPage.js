@@ -1,175 +1,74 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Formik, Form } from 'formik';
-import { TextField, ToggleButton, Button, IconButton } from '@mui/material';
-import { Search, Add } from '@mui/icons-material';
-import { BsX } from "react-icons/bs";
+import { Add } from '@mui/icons-material';
+import FeeHeadModal from '../Components/FeeHeadModal';
 import { toWords } from 'number-to-words';
 
-// Example fee options, add more if needed
-const feeOptions = [
-  { label: "Pocket Money", icon: <span>💰</span> },
-  { label: "Transport Fee", icon: <span>🚌</span> },
-  { label: "Exam Fee", icon: <span>📝</span> },
-  { label: "Uniform Fee", icon: <span>👕</span> },
-  { label: "Akash Books Fee", icon: <span>📚</span> },
-  { label: "Material Fee", icon: <span>📦</span> },
-];
-
-const FeeHeadModal = ({ open, onClose, currentFees = [], onConfirm }) => {
-  const [selected, setSelected] = useState([]);
-
-  useEffect(() => {
-    setSelected(currentFees);
-  }, [currentFees]);
-
-  const toggleFee = (label) => {
-    setSelected((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]
-    );
-  };
-
-  const handleConfirm = () => {
-    onConfirm(selected);
-    onClose();
-  };
-
-  if (!open) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.3)", display: "flex",
-        alignItems: "center", justifyContent: "center", zIndex: 1050
-      }}
-    >
-      <div
-        style={{
-          background: "#fff", borderRadius: "8px", maxWidth: "600px", width: "90%",
-          position: "relative", boxShadow: "0 2px 10px rgba(0,0,0,0.2)", padding: "16px"
-        }}
-      >
-        <div style={{ maxHeight: "60vh", overflowY: "auto", paddingRight: "4px" }}>
-          <div
-            style={{
-              display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px",
-              marginBottom: "12px", padding: "4px 8px", border: "1px solid #dee2e6",
-              borderRadius: "4px", minHeight: 48
-            }}
-          >
-            {selected.map((label, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: "inline-flex", alignItems: "center", backgroundColor: "#f0f0f0",
-                  borderRadius: "16px", padding: "2px 8px", fontSize: "12px"
-                }}
-              >
-                {label}
-                <BsX
-                  size={16}
-                  style={{ marginLeft: "4px", cursor: "pointer", color: "#18009C" }}
-                  onClick={() => toggleFee(label)}
-                />
-              </div>
-            ))}
-            <input
-              type="text"
-              placeholder="Search Fee Head"
-              style={{ border: "none", outline: "none", flexGrow: 1, minWidth: 120, background: "transparent" }}
-            />
-            <Search fontSize="small" style={{ marginLeft: "8px", color: "#6c757d" }} />
-          </div>
-
-          <p style={{ color: "red", fontSize: "12px", marginBottom: "12px" }}>
-            *Multiple Fee Heads can be selected
-          </p>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {feeOptions.map((fee, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => toggleFee(fee.label)}
-                style={{
-                  flex: "1 0 30%",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "4px",
-                  border: "1px solid #6c757d",
-                  backgroundColor: selected.includes(fee.label) ? "#0d6efd" : "transparent",
-                  color: selected.includes(fee.label) ? "#fff" : "#000",
-                  borderRadius: "4px", padding: "4px", fontSize: "12px", cursor: "pointer"
-                }}
-              >
-                {fee.icon}
-                <span>{fee.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div
-          style={{
-            textAlign: "center", borderTop: "1px solid #dee2e6", paddingTop: "12px",
-            marginTop: "12px", backgroundColor: "white"
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleConfirm}
-            style={{
-              backgroundColor: "#3425FF", color: "#fff", borderRadius: "4px",
-              padding: "6px 12px", fontSize: "14px", border: "none", cursor: "pointer"
-            }}
-          >
-            Add <Add sx={{ fontSize: 16, marginLeft: 4 }} />
-          </button>
-        </div>
-
-        <IconButton
-          onClick={onClose}
-          style={{
-            position: "absolute", bottom: -65, left: "50%", transform: "translateX(-50%)",
-            backgroundColor: "black", color: "white"
-          }}
-        >
-          <BsX size={28} />
-        </IconButton>
-      </div>
-    </div>
-  );
-};
-
 const PaymentForm = () => {
-  const [term, setTerm] = useState('');
+  const [term, setTerm] = useState('Term Fee 1');
   const [paymentMode, setPaymentMode] = useState('Cash');
   const [selectedDate, setSelectedDate] = useState('');
-  const [amountInWords, setAmountInWords] = useState('');
   const [selectedFees, setSelectedFees] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
 
   const paymentModes = ["Cash", "DD", "Cheque", "Credit/Debit Card"];
   const termOptions = ['Term Fee 1', 'Term Fee 2', 'Term Fee 3'];
 
-  const handleFeeConfirm = (fees) => setSelectedFees(fees);
+  const handleFeeConfirm = (fees) => {
+    const updatedFees = fees.map(fee => ({
+      label: fee,
+      amount: '',
+      description: '',
+      amountInWords: ''
+    }));
+    setSelectedFees(updatedFees);
+  };
+
+  const updateFee = (index, field, value) => {
+    const updated = [...selectedFees];
+    updated[index][field] = value;
+    if (field === 'amount') {
+      updated[index].amountInWords = value ? toWords(parseInt(value)) : '';
+    }
+    setSelectedFees(updated);
+  };
+
+  const removeFee = (index) => {
+    const updated = [...selectedFees];
+    updated.splice(index, 1);
+    setSelectedFees(updated);
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", marginLeft: "5%", gap: "12px", marginTop: "12px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+    <div
+      className="m-4"
+      style={{
+        fontFamily: 'Inter, sans-serif',
+        height: 'calc(100vh - 32px)', // viewport height minus margins
+        overflowY: 'auto', // enable vertical scroll
+        padding: '20px',
+        boxSizing: 'border-box'
+      }}
+    >
+      <div className="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <p style={{ margin: 0, fontSize: "12px" }}>Due Amount</p>
-          <span style={{ background: "#E9E9E9", fontSize: "18px", fontWeight: "600", padding: "4px 12px", borderRadius: "4px" }}>
+          <p className="mb-1" style={{ fontSize: 12 }}>Due Amount</p>
+          <div className="fw-bold px-3 py-1 rounded" style={{ fontSize: 22, background: '#F2F2F2' }}>
             46,000
-          </span>
+          </div>
         </div>
-        <div style={{ display: "flex", border: "1px solid #dee2e6", borderRadius: "999px", overflow: "hidden" }}>
+        <div className="d-flex border rounded-pill overflow-hidden" style={{ marginRight: '35%' }}>
           {paymentModes.map((mode) => (
             <div
               key={mode}
               onClick={() => setPaymentMode(mode)}
+              className="px-3 py-1"
               style={{
-                flex: 1, textAlign: "center", padding: "6px 12px", cursor: "pointer",
-                backgroundColor: paymentMode === mode ? "#3C28FF" : "transparent",
-                color: paymentMode === mode ? "#FFFFFF" : "#252C32"
+                cursor: 'pointer',
+                backgroundColor: paymentMode === mode ? '#3C28FF' : 'transparent',
+                color: paymentMode === mode ? '#fff' : '#252C32',
+                fontSize: 13,
+                fontWeight: 500
               }}
             >
               {mode}
@@ -180,117 +79,161 @@ const PaymentForm = () => {
 
       <Formik
         initialValues={{ amount: '', description: '', receiptNo: '' }}
-        onSubmit={(values) => {
-          console.log('Submitted:', { ...values, selectedFees });
-        }}
+        onSubmit={(values) => console.log('Submitted:', { ...values, selectedFees })}
       >
         {({ values, handleChange, handleBlur }) => (
-          <Form>
-            <div style={{ position: "relative", marginLeft: "2%", marginRight: "20%" }}>
-              <div style={{ position: "absolute", top: 0, left: 20, transform: "translateY(-50%)", display: "flex", gap: "8px" }}>
-                {termOptions.map((val) => (
-                  <ToggleButton
+          <Form style={{ height: 'auto' }}>
+            {/* Term Fee Tabs & Inputs */}
+            <div className="bg-light border rounded p-3 mb-3 position-relative mt-5" style={{ marginRight: '5%' }}>
+              <div className="position-absolute d-flex gap-2" style={{ top: '-14px', left: '12px' }}>
+                {termOptions.map(val => (
+                  <button
+                    type="button"
                     key={val}
-                    value={val}
-                    selected={term === val}
-                    onChange={() => setTerm(val)}
-                    sx={{
-                      borderRadius: "23px", px: 2, py: 0.5, fontSize: "12px",
-                      border: "1px solid #BFBFBF", backgroundColor: "white",
-                      "&.Mui-selected": { bgcolor: "#1E1EFF", color: "#fff" }
+                    onClick={() => setTerm(val)}
+                    className={`btn btn-sm rounded-pill ${term === val ? 'text-white' : 'btn-outline-secondary'}`}
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      backgroundColor: term === val ? '#3C28FF' : 'transparent',
+                      border: term === val ? 'none' : ''
                     }}
                   >
                     {val}
-                  </ToggleButton>
+                  </button>
                 ))}
               </div>
-
-              <div style={{ marginTop: "32px", border: "1px solid #E6E6E6", borderRadius: "12px", padding: "32px 16px", backgroundColor: "#FAFAFA" }}>
-                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                  <TextField
-                    name="amount"
-                    label="Enter Amount"
-                    type="number"
-                    variant="outlined"
-                    value={values.amount}
-                    onChange={(e) => {
-                      handleChange(e);
-                      setAmountInWords(e.target.value ? toWords(parseInt(e.target.value)) : '');
-                    }}
-                    onBlur={handleBlur}
-                    sx={{ width: "220px", backgroundColor: "#fff" }}
-                  />
-                  <TextField
-                    name="description"
-                    label="Description"
-                    variant="outlined"
-                    value={values.description}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    sx={{ flex: 2, backgroundColor: "#fff" }}
-                  />
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>
-                  {selectedFees.map((fee, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        display: "inline-flex", alignItems: "center", backgroundColor: "#f0f0f0",
-                        borderRadius: "16px", padding: "2px 8px", fontSize: "12px"
-                      }}
-                    >
-                      {fee}
-                      <BsX
-                        size={16}
-                        style={{ marginLeft: "4px", cursor: "pointer", color: "#18009C" }}
-                        onClick={() => setSelectedFees(selectedFees.filter(f => f !== fee))}
-                      />
-                    </div>
-                  ))}
-                </div>
+              <div className="d-flex gap-2 mt-2">
+                <input
+                  name="amount"
+                  type="number"
+                  className="form-control"
+                  placeholder="Enter Amount"
+                  value={values.amount}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  style={{ maxWidth: '200px', background: '#fff' }}
+                />
+                <input
+                  name="description"
+                  className="form-control"
+                  placeholder="Description"
+                  value={values.description}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  style={{ background: '#fff' }}
+                />
               </div>
+              <p className="small mt-1" style={{ color: 'orangered', fontSize: '12px' }}>
+                * Amount in words will display here
+              </p>
             </div>
 
-            <div style={{ display: "flex", gap: "12px", marginLeft: "5%", marginTop: "16px" }}>
-              <TextField
+            {/* Dynamic Fee Heads */}
+            {selectedFees.map((fee, idx) => (
+              <div key={idx} className="position-relative bg-white border rounded p-3 mb-3" style={{ marginRight: '5%' }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-12px',
+                    left: '16px',
+                    backgroundColor: '#3C28FF',
+                    color: '#fff',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    borderRadius: '20px',
+                    padding: '2px 12px'
+                  }}>
+                  {fee.label}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateFee(idx, 'amount', '')}
+                  className="btn btn-warning btn-sm position-absolute  "
+                  style={{top:'-12px', right: '48px', fontSize: '12px', borderRadius: '12px' }}
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeFee(idx)}
+                  className="btn btn-danger btn-sm position-absolute d-flex align-items-center justify-content-center "
+                  style={{top:'-12px', right: '10px', width: '22px', height: '22px', borderRadius: '50%', fontSize: '14px', padding: 0 }}
+                >
+                  ×
+                </button>
+                <div className="d-flex gap-2 mt-3">
+                  <input
+                    type="number"
+                    placeholder="Enter Amount"
+                    className="form-control"
+                    value={fee.amount}
+                    onChange={(e) => updateFee(idx, 'amount', e.target.value)}
+                    style={{ maxWidth: '200px', background: '#fff' }}
+                  />
+                  <input
+                    placeholder="Description"
+                    className="form-control"
+                    value={fee.description}
+                    onChange={(e) => updateFee(idx, 'description', e.target.value)}
+                    style={{ background: '#fff' }}
+                  />
+                </div>
+                <p className="text-danger small mt-1">* Amount in words: <strong>{fee.amountInWords}</strong></p>
+              </div>
+            ))}
+
+            {/* Receipt No & Date */}
+            <div className="d-flex gap-2 mb-3 ms-2" style={{ marginRight: '5%' }}>
+              <input
                 name="receiptNo"
-                label="Pre Print Receipt No"
-                variant="outlined"
+                placeholder="Pre Print Receipt No"
+                className="form-control flex-grow-0"
                 value={values.receiptNo}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                sx={{ flex: 1 }}
+                style={{ fontSize: '14px', width: '18%', height: '38px', borderRadius: '8px' }}
               />
-              <TextField
+              <input
                 type="date"
-                variant="outlined"
+                className="form-control flex-grow-0"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                sx={{ flex: 1 }}
+                style={{ fontSize: '14px', width: '18%', height: '38px', borderRadius: '8px' }}
               />
             </div>
 
-            <div style={{ marginTop: "12px", textAlign: "center" }}>
-              <Button
-                variant="contained"
+            {/* Add Fee Head */}
+            <div className="text-center mb-4">
+              <button
+                type="button"
                 onClick={() => setModalOpen(true)}
-                sx={{
-                  backgroundColor: "#B6B1FF", color: "black", fontSize: "12px", fontWeight: 400,
-                  textTransform: "capitalize", boxShadow: "none", "&:hover": { boxShadow: "none" }
-                }}
+                className="btn"
+                style={{ backgroundColor: '#B6B1FF', color: 'black', borderRadius: '8px', fontSize: '14px', padding: '6px 24px',width:'25%' }}
               >
-                <Add sx={{ fontSize: 16, mr: 1 }} /> Add Fee Head
-              </Button>
+                <Add style={{ fontSize: 16, marginRight: 4 }} /> Add Fee Head
+              </button>
             </div>
 
-            <FeeHeadModal
-              open={modalOpen}
-              onClose={() => setModalOpen(false)}
-              currentFees={selectedFees}
-              onConfirm={handleFeeConfirm}
-            />
-          </Form>
+            {/* Submit */}
+            <div className="text-center mt-5 ">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ backgroundColor: '#3425FF', color: '#fff', borderRadius: '6px', fontSize: '14px', padding: '6px 32px' }}
+              >
+                Confirm →
+              </button>
+            </div>
+
+            {/* Modal */}
+              <FeeHeadModal
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                currentFees={selectedFees.map(f => f.label)}
+                onConfirm={handleFeeConfirm}
+              />
+            </Form>
         )}
       </Formik>
     </div>
